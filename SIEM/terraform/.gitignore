@@ -7,6 +7,7 @@
 
 terraform.tfvars
 *.auto.tfvars
+pmapi.tfvars
 
 crash.log
 
