@@ -4,7 +4,7 @@ variable "endpoint" {
 
 variable "api_token" {
     type = string
-    secret = true
+    sensitive = true
     ephemeral = true
 }
 
