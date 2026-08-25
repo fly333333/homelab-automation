@@ -1,0 +1,50 @@
+---
+- Name: Set up OS for SIEM and Basic Hardening
+  hosts: all
+  become: yes
+  user: ansible
+  become: true
+
+  tasks:
+    - name: Upgrade Packages and System
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: full
+
+    - name: Reboot System
+      ansible.builtin.reboot:
+
+    - name: Increase File Map Parameter
+    # System parameter file are loaded in alphanumerical order, so the higher
+    # the number that prefixes a file, the later it loads. Useful for ensuring
+    # an order, or simply understanding what goes earlier/later.
+      template:
+        source: 99-elasticsearch.conf.j2
+        dest: /etc/sysctl.d/99-elasticsearch.conf
+
+    - name: Load the New Kernel Perameter (sysctl)
+      ansible.builtin.shell: sysctl -p /etc/sysctl.d/99-elasticsearch.conf
+
+    - name: Turn all Memory Swaps Off
+      ansible.builtin.shell: sudo swapoff -a
+
+    - name: Prevent Re-enabling it when Booting
+    # Uses regex to edit the file and disabling the swap if present
+      ansible.builtin.shell: sed -i '/swap/s/^/#/' /etc/fstab
+
+    - name: Override File and Network Connection handles
+    # elastic opens many files and connections, hence the preumptve change
+      template:
+        source: elasticsearch.conf.j2
+        dest: /etc/security/limits.d/elasticsearch.conf
+
+    - name: Create Directory for Override Service
+      ansible.builtin.file:
+        path: /etc/systemd/system/elasticsearch.service.d
+        state: directory
+        mode: '755'
+
+    - name: Preumtively creating Service to Override File Handling Limits
+      template:
+        source: override.conf.j2
+        destination: /etc/systemd/system/elasticsearch.service.d/override.conf
