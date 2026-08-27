@@ -1,8 +1,7 @@
 ---
-- Name: Set up OS for SIEM and Basic Hardening
+- name: Set up OS for SIEM and Basic Hardening
   hosts: all
-  become: yes
-  user: ansible
+  remote_user: ansible
   become: true
 
   tasks:
@@ -18,7 +17,7 @@
     # System parameter file are loaded in alphanumerical order, so the higher
     # the number that prefixes a file, the later it loads. Useful for ensuring
     # an order, or simply understanding what goes earlier/later.
-      template:
+      ansible.builtin.template:
         source: 99-elasticsearch.conf.j2
         dest: /etc/sysctl.d/99-elasticsearch.conf
 
@@ -34,7 +33,7 @@
 
     - name: Override File and Network Connection handles
     # elastic opens many files and connections, hence the preumptve change
-      template:
+      ansible.builtin.template:
         source: elasticsearch.conf.j2
         dest: /etc/security/limits.d/elasticsearch.conf
 
@@ -44,7 +43,7 @@
         state: directory
         mode: '755'
 
-    - name: Preumtively creating Service to Override File Handling Limits
-      template:
+    - name: Preemptively creating Service to Override File Handling Limits
+      ansible.builtin.template:
         source: override.conf.j2
-        destination: /etc/systemd/system/elasticsearch.service.d/override.conf
+        dest: /etc/systemd/system/elasticsearch.service.d/override.conf

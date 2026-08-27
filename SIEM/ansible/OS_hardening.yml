@@ -1,0 +1,91 @@
+---
+- name: Basic hardening for the SIEM
+  hosts: all
+  remote_user: ansible
+  become: true
+
+  tasks:
+    - name: Install ufw (firewall)
+      ansible.builtin.apt:
+        name: ufw
+
+    - name: Set UFW default deny incoming
+      community.general.ufw:
+        default: deny
+        direction: incoming
+    
+    - name: Set UFW default allow outgoing
+      community.general.ufw:
+        default: allow
+        direction: outgoing 
+    
+    - name: Allow port 22 
+      community.general.ufw:
+        rule: allow
+        port: '22'
+        proto: tcp
+
+    - name: Allow port 9200
+      community.general.ufw:
+        rule: allow
+        port: '9200'
+        proto: tcp
+ 
+    - name: Allow port 9300
+      community.general.ufw:
+        rule: allow
+        port: '9300'
+        proto: tcp
+ 
+    - name: Allow port 5601
+      community.general.ufw:
+        rule: allow
+        port: '5601'
+        proto: tcp
+ 
+    - name: Allow port 8220
+      community.general.ufw:
+        rule: allow
+        port: '8220'
+        proto: tcp
+
+    - name: Enable UFW
+      community.general.ufw:
+        state: enabled
+
+    - name: Automatic security updates
+      ansible.builtin.apt:
+        pkg:
+          - unattended-upgrades
+          - apt-listchanges
+
+    - name: Enable the auto upgrades
+      ansible.builtin.template:
+        source: 20auto-upgrades.j2
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+
+    - name: set rules for ssh logins
+      ansible.builtin.template:
+        source: sshd_config.j2
+        dest: /etc/ssh/sshd_config
+
+    - name: restart sshd to update changes
+      ansible.builtin.systemd_service:
+        name: sshd
+        state: restarted
+
+    - name: fail2ban install
+      ansible.builtin.apt:
+        name: fail2ban
+
+    - name: fail2ban config
+      ansible.builtin.template:
+        source: jail.local.j2
+        dest: /etc/fail2ban/jail.local
+
+    - name: fail2ban systemctl start
+      ansible.builtin.systemd_service:
+        name: fail2ban
+        state: started
+        enabled: true
+
