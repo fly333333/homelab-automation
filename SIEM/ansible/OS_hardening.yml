@@ -76,7 +76,9 @@
 
     - name: fail2ban install
       ansible.builtin.apt:
-        name: fail2ban
+        pkg:
+          - fail2ban
+          - rsyslog
 
     - name: fail2ban config
       ansible.builtin.template:
