@@ -61,12 +61,12 @@
 
     - name: Enable the auto upgrades
       ansible.builtin.template:
-        source: 20auto-upgrades.j2
+        src: 20auto-upgrades.j2
         dest: /etc/apt/apt.conf.d/20auto-upgrades
 
     - name: set rules for ssh logins
       ansible.builtin.template:
-        source: sshd_config.j2
+        src: sshd_config.j2
         dest: /etc/ssh/sshd_config
 
     - name: restart sshd to update changes
@@ -80,7 +80,7 @@
 
     - name: fail2ban config
       ansible.builtin.template:
-        source: jail.local.j2
+        src: jail.local.j2
         dest: /etc/fail2ban/jail.local
 
     - name: fail2ban systemctl start
