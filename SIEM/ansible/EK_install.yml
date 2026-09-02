@@ -26,5 +26,123 @@
           - elasticsearch=9.5
         register: command_results
 
-    - name: Parse APT output for Elastic SuperUsr Password
-      
+    - name: Configure JVM heap size
+      ansible.builtin.template:
+        src: heap.options.j2
+        dest: /etc/elasticsearch/jvm.options.d/heap.options
+
+    - name: Set elasticsearch config
+      ansible.builtin.template:
+        src: elasticsearch.yml.j2
+        dest: /etc/elasticsearch/elasticsearch.yml
+
+        # TODO:
+        # - systemctl for elasticsearch
+        # - test service
+        # - then move past the elastic pass/token steps
+
+
+    # Following two sections assisted by Claude...
+    # Essentially grabs the password and enrollment token
+    # Adds and encrypts it to vault using internal vault commmand
+    # No log prevents the pass/token passed to ansible output
+    # This section will also check to see if the vault already exists,
+    # or if Kibana is already enrolled. This prevents any reset of good config.
+
+    - name: Check if elastic password already stored
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../group_vars/siem/vault.yml"
+      ignore_errors: true
+      no_log: true
+
+    - name: Generate and vault the elastic password
+      when: vault_elastic_password is not defined
+      block:
+        - name: Reset elastic superuser password
+          ansible.builtin.command: /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic -b
+          register: reset_result
+          changed_when: true
+          no_log: true
+
+        - name: Extract the password from output
+          ansible.builtin.set_fact:
+            new_elastic_password: "{{ reset_result.stdout | regex_search('New value: (.+)', '\\1') | first }}"
+          no_log: true
+
+        - name: Encrypt the password
+          ansible.builtin.command: >
+            ansible-vault encrypt_string
+            --vault-password-file ~/.ansible_vault_pass
+            '{{ new_elastic_password }}' --name vault_elastic_password
+          delegate_to: localhost
+          register: encrypted_password
+          no_log: true
+
+        - name: Insert encrypted password into vault.yml
+          ansible.builtin.blockinfile:
+            path: "{{ playbook_dir }}/../group_vars/siem/vault.yml"
+            marker: "# {mark} ELASTIC PASSWORD"
+            block: "{{ encrypted_password.stdout }}"
+          delegate_to: localhost
+          no_log: true
+    
+    # Following section assisted by Claude...
+    # Essentially grabs the password and enrollment token
+    # Adds and encrypts it to vault using internal vault commmand
+    # No log prevents the pass/token passed to ansible output
+    # This section will also check to see if the vault already exists,
+    # or if Kibana is already enrolled. This prevents any reset of good config.
+    - name: Check if Kibana is already configured/enrolled
+      ansible.builtin.stat:
+        path: /etc/kibana/kibana.yml
+      register: kibana_config
+
+    - name: Check if kibana.yml already has elasticsearch host configured
+      ansible.builtin.command: grep -q "elasticsearch.hosts" /etc/kibana/kibana.yml
+      register: kibana_enrolled_check
+      failed_when: false
+      changed_when: false
+      when: kibana_config.stat.exists
+
+    - name: Generate and use enrollment token if Kibana isn't enrolled yet
+      when: not kibana_config.stat.exists or kibana_enrolled_check.rc != 0
+      block:
+        - name: Generate Kibana enrollment token
+          ansible.builtin.command: /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana
+          register: token_result
+          changed_when: true
+          no_log: true
+
+        - name: Set token as a fact for immediate use
+          ansible.builtin.set_fact:
+            kibana_enrollment_token: "{{ token_result.stdout | trim }}"
+          no_log: true
+
+        - name: Encrypt the token for record-keeping
+          ansible.builtin.command: >
+            ansible-vault encrypt_string
+            --vault-password-file ~/.ansible_vault_pass
+            '{{ kibana_enrollment_token }}' --name vault_kibana_enrollment_token
+          delegate_to: localhost
+          register: encrypted_token
+          no_log: true
+
+        - name: Insert encrypted token into vault.yml (historical record only — it will expire)
+          ansible.builtin.blockinfile:
+            path: "{{ playbook_dir }}/../group_vars/siem/vault.yml"
+            marker: "# {mark} KIBANA ENROLLMENT TOKEN (expires 30min after generation)"
+            block: "{{ encrypted_token.stdout }}"
+          delegate_to: localhost
+          no_log: true
+
+        - name: Enroll Kibana using the freshly generated token
+          ansible.builtin.command: /usr/share/kibana/bin/kibana-setup --enrollment-token {{ kibana_enrollment_token }}
+          no_log: true
+
+
+
+# TODO: 
+# - install kibana
+# - configure kibana (use template)
+# - enroll kibana to elastic
+# - systemctl kibana
