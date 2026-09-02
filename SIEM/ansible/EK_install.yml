@@ -1,0 +1,30 @@
+---
+- name: Elastic and Kibana download and setup
+  hosts: all
+  remome_user: ansible
+  become: true
+
+  tasks:
+    - name: Apt Install gpg Support Packages 
+      ansible.builtin.apt:
+        pkg:
+          - apt-transport-https
+          - gnupg
+
+    - name: Get Elastic Keyring to verify Elastic download
+      # `-wO -` outputs the file to stdout, which can then be used by gpg
+      ansible.builtin.shell: wget -qO - https://artifacts.elastic.co/GPG-KEY-elastic | gpg --dearmor -o /usr/share/keyrings/elastic-keyring.gpg
+
+    - name: Signal the Signing of Elastic during use
+      ansible.builtin.template:
+        src: elastic-9.x.list
+        dst: /etc/apt/sources.list.d/elastic-9.x.list
+
+    - name: Apt Install Elastic (v9.5)
+      ansible.builtin.apt:
+        pkg:
+          - elasticsearch=9.5
+        register: command_results
+
+    - name: Parse APT output for Elastic SuperUsr Password
+      
