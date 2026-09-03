@@ -1,8 +1,14 @@
 ---
 - name: Elastic and Kibana download and setup
   hosts: all
-  remome_user: ansible
+  remote_user: ansible
   become: true
+
+  handlers:
+    - name: restart elastic
+      ansible.builtin.systemd_service:
+        name: elasticsearch
+        state: restarted
 
   tasks:
     - name: Apt Install gpg Support Packages 
@@ -12,35 +18,49 @@
           - gnupg
 
     - name: Get Elastic Keyring to verify Elastic download
-      # `-wO -` outputs the file to stdout, which can then be used by gpg
-      ansible.builtin.shell: wget -qO - https://artifacts.elastic.co/GPG-KEY-elastic | gpg --dearmor -o /usr/share/keyrings/elastic-keyring.gpg
+      # `-qO -` outputs the file to stdout, which can then be used by gpg
+      ansible.builtin.shell: wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | gpg --dearmor -o /usr/share/keyrings/elastic-keyring.gpg
+      args: { creates: /usr/share/keyrings/elastic-keyring.gpg }
 
     - name: Signal the Signing of Elastic during use
       ansible.builtin.template:
         src: elastic-9.x.list
-        dst: /etc/apt/sources.list.d/elastic-9.x.list
+        dest: /etc/apt/sources.list.d/elastic-9.x.list
 
     - name: Apt Install Elastic (v9.5)
       ansible.builtin.apt:
+        update_cache: true
         pkg:
-          - elasticsearch=9.5
-        register: command_results
+          - elasticsearch=9.5.0
 
     - name: Configure JVM heap size
       ansible.builtin.template:
         src: heap.options.j2
         dest: /etc/elasticsearch/jvm.options.d/heap.options
+        notify: restart elastic
 
     - name: Set elasticsearch config
       ansible.builtin.template:
         src: elasticsearch.yml.j2
         dest: /etc/elasticsearch/elasticsearch.yml
+        notify: restart elastic
 
-        # TODO:
-        # - systemctl for elasticsearch
-        # - test service
-        # - then move past the elastic pass/token steps
+    - name: Restart systemd daemon 
+      ansible.builtin.systemd_service:
+        daemon_reload: true
 
+    - name: Start ElasticSearch with SystemDaemon
+      ansible.builtin.systemd_service:
+        name: elasticsearch
+        enabled: true
+        state: started
+
+    - name: Wait for Elasticsearch to be initialized
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 9200
+        delay: 5
+        timeout: 60
 
     # Following two sections assisted by Claude...
     # Essentially grabs the password and enrollment token
@@ -85,13 +105,9 @@
             block: "{{ encrypted_password.stdout }}"
           delegate_to: localhost
           no_log: true
-    
-    # Following section assisted by Claude...
-    # Essentially grabs the password and enrollment token
-    # Adds and encrypts it to vault using internal vault commmand
-    # No log prevents the pass/token passed to ansible output
-    # This section will also check to see if the vault already exists,
-    # or if Kibana is already enrolled. This prevents any reset of good config.
+          create: true
+   
+   # kibana enrollment token section
     - name: Check if Kibana is already configured/enrolled
       ansible.builtin.stat:
         path: /etc/kibana/kibana.yml
@@ -134,15 +150,26 @@
             block: "{{ encrypted_token.stdout }}"
           delegate_to: localhost
           no_log: true
+          create: true
 
-        - name: Enroll Kibana using the freshly generated token
-          ansible.builtin.command: /usr/share/kibana/bin/kibana-setup --enrollment-token {{ kibana_enrollment_token }}
-          no_log: true
+    - name: Install kibana
+      ansible.builtin.apt:
+        pkg:
+          - kibana=9.5.0
+
+    - name: Add config to Kibana
+      ansible.builtin.template:
+        src: kibana.yml.j2
+        dest: /etc/kibana/kibana.yml
+
+    - name: Enroll Kibana using the freshly generated token
+      ansible.builtin.command: /usr/share/kibana/bin/kibana-setup --enrollment-token {{ kibana_enrollment_token }}
+      no_log: true
+
+    - name: Start and enable Kibana
+      ansible.builtin.systemd_service:
+        name: kibana
+        enabled: true
+        state: started
 
 
-
-# TODO: 
-# - install kibana
-# - configure kibana (use template)
-# - enroll kibana to elastic
-# - systemctl kibana
