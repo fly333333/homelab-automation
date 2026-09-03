@@ -1,0 +1,29 @@
+---
+- name: Deploy ILM Policy to Kibana
+  hosts: all
+  remote_user: ansible
+  become: true
+
+  tasks:
+    - name: Create Index Lifecycle Management
+      ansible.builtin.uri:
+        url: "https://182.168.0.15:9200/_ilm/policy/homelab-policy"
+        method: PUT
+        user: elastic
+        password: "{{ elastic_password }}"
+        validate_certs: false
+        body_format: json
+        body:
+          policy:
+            phases:
+              hot:
+                actions:
+                  rollover:
+                    max_primary_shard_size: "5gb"
+                    max_age: "7d"
+              delete:
+                min_age: "30d"
+                actions:
+                  delete: {}
+        status_code: 200
+
