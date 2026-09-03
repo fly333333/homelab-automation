@@ -82,12 +82,12 @@
           ansible.builtin.command: /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic -b
           register: reset_result
           changed_when: true
-          no_log: true
+          # no_log: true
 
         - name: Extract the password from output
           ansible.builtin.set_fact:
             new_elastic_password: "{{ reset_result.stdout | regex_search('New value: (.+)', '\\1') | first }}"
-          no_log: true
+          # no_log: true
 
         - name: Encrypt the password
           ansible.builtin.command: >
@@ -96,7 +96,7 @@
             '{{ new_elastic_password }}' --name vault_elastic_password
           delegate_to: localhost
           register: encrypted_password
-          no_log: true
+          # no_log: true
 
         - name: Insert encrypted password into vault.yml
           ansible.builtin.blockinfile:
@@ -104,7 +104,7 @@
             marker: "# {mark} ELASTIC PASSWORD"
             block: "{{ encrypted_password.stdout }}"
           delegate_to: localhost
-          no_log: true
+          # no_log: true
    
    # kibana enrollment token section
     - name: Check if Kibana is already configured/enrolled
@@ -126,12 +126,12 @@
           ansible.builtin.command: /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana
           register: token_result
           changed_when: true
-          no_log: true
+          # no_log: true
 
         - name: Set token as a fact for immediate use
           ansible.builtin.set_fact:
             kibana_enrollment_token: "{{ token_result.stdout | trim }}"
-          no_log: true
+          # no_log: true
 
         - name: Encrypt the token for record-keeping
           ansible.builtin.command: >
@@ -140,7 +140,7 @@
             '{{ kibana_enrollment_token }}' --name vault_kibana_enrollment_token
           delegate_to: localhost
           register: encrypted_token
-          no_log: true
+          # no_log: true
 
         - name: Insert encrypted token into vault.yml (historical record only — it will expire)
           ansible.builtin.blockinfile:
@@ -148,7 +148,7 @@
             marker: "# {mark} KIBANA ENROLLMENT TOKEN (expires 30min after generation)"
             block: "{{ encrypted_token.stdout }}"
           delegate_to: localhost
-          no_log: true
+          # no_log: true
 
     - name: Install kibana
       ansible.builtin.apt:
@@ -162,7 +162,7 @@
 
     - name: Enroll Kibana using the freshly generated token
       ansible.builtin.command: /usr/share/kibana/bin/kibana-setup --enrollment-token {{ kibana_enrollment_token }}
-      no_log: true
+      # no_log: true
 
     - name: Start and enable Kibana
       ansible.builtin.systemd_service:
