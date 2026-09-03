@@ -105,7 +105,6 @@
             block: "{{ encrypted_password.stdout }}"
           delegate_to: localhost
           no_log: true
-          create: true
    
    # kibana enrollment token section
     - name: Check if Kibana is already configured/enrolled
@@ -150,7 +149,6 @@
             block: "{{ encrypted_token.stdout }}"
           delegate_to: localhost
           no_log: true
-          create: true
 
     - name: Install kibana
       ansible.builtin.apt:
