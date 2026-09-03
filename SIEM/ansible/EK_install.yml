@@ -100,7 +100,7 @@
 
         - name: Insert encrypted password into vault.yml
           ansible.builtin.blockinfile:
-            path: "{{ playbook_dir }}/../group_vars/siem/vault.yml"
+            path: "{{ playbook_dir }}/group_vars/siem/vault.yml"
             marker: "# {mark} ELASTIC PASSWORD"
             block: "{{ encrypted_password.stdout }}"
           delegate_to: localhost
@@ -144,7 +144,7 @@
 
         - name: Insert encrypted token into vault.yml (historical record only — it will expire)
           ansible.builtin.blockinfile:
-            path: "{{ playbook_dir }}/../group_vars/siem/vault.yml"
+            path: "{{ playbook_dir }}/group_vars/siem/vault.yml"
             marker: "# {mark} KIBANA ENROLLMENT TOKEN (expires 30min after generation)"
             block: "{{ encrypted_token.stdout }}"
           delegate_to: localhost
