@@ -19,7 +19,7 @@
 
     - name: Get Elastic Keyring to verify Elastic download
       # `-qO -` outputs the file to stdout, which can then be used by gpg
-      ansible.builtin.shell: wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | gpg --dearmor -o /usr/share/keyrings/elastic-keyring.gpg
+      ansible.builtin.shell: wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
       args: { creates: /usr/share/keyrings/elastic-keyring.gpg }
 
     - name: Signal the Signing of Elastic during use
