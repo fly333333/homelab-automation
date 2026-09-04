@@ -10,7 +10,7 @@
         url: "https://182.168.0.15:9200/_ilm/policy/homelab-policy"
         method: PUT
         user: elastic
-        password: "{{ elastic_password }}"
+        password: "{{ vault_elastic_password }}"
         validate_certs: false
         body_format: json
         body:
