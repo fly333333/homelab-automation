@@ -7,7 +7,7 @@
   tasks:
     - name: Create Index Lifecycle Management
       ansible.builtin.uri:
-        url: "https://182.168.0.15:9200/_ilm/policy/homelab-policy"
+        url: "https://182.168.0.15:5601/_ilm/policy/homelab-policy"
         method: PUT
         user: elastic
         password: "{{ vault_elastic_password }}"
