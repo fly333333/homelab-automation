@@ -4,7 +4,7 @@
   remote_user: ansible
   become: true
   vars_files:
-    - {{ playbook_dir }}/group_vars/siem/vault.yml
+    - group_vars/siem/vault.yml
 
   tasks:
     - name: Create Index Lifecycle Management
