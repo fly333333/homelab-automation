@@ -3,8 +3,6 @@
   hosts: all
   remote_user: ansible
   become: true
-  vars_files:
-    - group_vars/siem/vault.yml
 
   tasks:
     - name: Create Index Lifecycle Management
