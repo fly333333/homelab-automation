@@ -1,6 +1,6 @@
 ---
 - name: Elastic and Kibana download and setup
-  hosts: all
+  hosts: siem
   remote_user: ansible
   become: true
 

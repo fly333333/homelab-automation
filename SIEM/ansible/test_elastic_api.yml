@@ -1,0 +1,27 @@
+---
+- name: Fleet Server Setup
+  hosts: siem
+  remote_user: ansible
+  become: true
+
+  tasks:
+    - name: Create Agent Policy for Fleet Server
+      ansible.builtin.uri:
+        url: "https://{{ elastic_host }}:5601/api/fleet/agent_policies"
+        method: POST
+        user: elastic
+        password: "{{ vault_elastic_password }}"
+        validate_certs: false
+        headers:
+          kbn-xsrf: "true"
+        body_format: json
+        body:
+          name: "Fleet Server Policy"
+          namespace: "default"
+          has_fleet_server: true
+        status_code: 200
+      register: fleet_server_policy
+
+    - name: Debug Agent Policy POST Respons
+      ansible.builtin.debug:
+        var: fleet_server_policy.json
