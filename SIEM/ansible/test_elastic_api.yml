@@ -7,7 +7,7 @@
   tasks:
     - name: Create Agent Policy for Fleet Server
       ansible.builtin.uri:
-        url: "https://{{ elastic_host }}:5601/api/fleet/agent_policies"
+        url: "http://{{ elastic_host }}:5601/api/fleet/agent_policies"
         method: POST
         user: elastic
         password: "{{ vault_elastic_password }}"
