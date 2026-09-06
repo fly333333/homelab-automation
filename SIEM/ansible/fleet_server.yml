@@ -63,7 +63,7 @@
     - name: Install and start Fleet Server
       ansible.builtin.command: >
         /opt/elastic-agent-9.5.0-linux-x86_64/elastic-agent install
-        --fleet-server-es=https://{{ elastic_host }}:9200
+        --fleet-server-es=http://{{ elastic_host }}:5601
         --fleet-server-service-token={{ fleet_service_token }}
         --fleet-server-policy={{ fleet_server_policy.json.item.id }}
         --fleet-server-es-ca=/etc/elasticsearch/certs/http_ca.crt
