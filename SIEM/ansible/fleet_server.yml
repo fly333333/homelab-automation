@@ -34,11 +34,13 @@
       register: fleet_service_token_output
       when: "'elastic/fleet-server/fleet-server-token' not in token_list.stdout"
 
-    - name: Clean token output
-      vars: 
+    - name: Split token output
+      ansible.builtin.set_fact:
         fleet_service_token_list: "{{ fleet_service_token_output.stdout | split }}"
-        fleet_service_token: "{{ fleet_service_token_list[-1] | trim }}"
 
+    - name: Clean token output
+      ansible.builtin.set_fact:
+        fleet_service_token: "{{ fleet_service_token_list[-1] | trim }}"
 
     - name: Check if Elastic Agent is Installed
       ansible.builtin.stat:
