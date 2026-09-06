@@ -32,7 +32,7 @@
       ansible.builtin.command: >
         /usr/share/elasticsearch/bin/elasticsearch-service-tokens create elastic/fleet-server fleet-server-token
       register: fleet_service_token_output
-      when: "'elastic/fleet-server/fleet-server-token' not in token_list.stdout"
+      # when: "'elastic/fleet-server/fleet-server-token' not in token_list.stdout"
 
     - name: Clean token output
       ansible.builtin.set_fact: 
