@@ -60,13 +60,13 @@
         path: /opt/Elastic/Agent/elastic-agent
       register: fleet_server_installed
 
-    - name: Install and start Fleet Server
-      ansible.builtin.command: >
-        /opt/elastic-agent-9.5.0-linux-x86_64/elastic-agent install
-        --fleet-server-es=http://{{ elastic_host }}:5601
-        --fleet-server-service-token={{ fleet_service_token }}
-        --fleet-server-policy={{ fleet_server_policy.json.item.id }}
-        --fleet-server-es-ca=/etc/elasticsearch/certs/http_ca.crt
-        --non-interactive
-      when: not fleet_server_installed.stat.exists    
+    # - name: Install and start Fleet Server
+    #   ansible.builtin.command: >
+    #     /opt/elastic-agent-9.5.0-linux-x86_64/elastic-agent install
+    #     --fleet-server-es=http://{{ elastic_host }}:5601
+    #     --fleet-server-service-token={{ fleet_service_token }}
+    #     --fleet-server-policy={{ fleet_server_policy.json.item.id }}
+    #     --fleet-server-es-ca=/etc/elasticsearch/certs/http_ca.crt
+    #     --non-interactive
+    #   when: not fleet_server_installed.stat.exists    
 
