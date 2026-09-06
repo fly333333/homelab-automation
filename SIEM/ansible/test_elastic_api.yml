@@ -12,6 +12,8 @@
         user: elastic
         password: "{{ vault_elastic_password }}"
         validate_certs: false
+        headers:
+          kbn-xsrf: "xx"
         body_format: json
         body:
           name: "Fleet Server Policy"
