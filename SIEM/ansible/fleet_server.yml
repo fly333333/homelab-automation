@@ -22,6 +22,7 @@
           has_fleet_server: true
         status_code: 200
       register: fleet_server_policy
+      ignore_errors: true
 
     - name: Check service account tokens
       ansible.builtin.command: /usr/share/elasticsearch/bin/elasticsearch-service-tokens list
