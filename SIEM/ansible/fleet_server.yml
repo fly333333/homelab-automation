@@ -42,10 +42,16 @@
       ansible.builtin.set_fact:
         fleet_service_token: "{{ fleet_service_token_list[-1] | trim }}"
 
+    # For debugging, delete later
     - name: Debug Service Token
       ansible.builtin.debug:
         var: fleet_service_token
   
+    # For debugging, delete later
+    - name: Debug Server Policy ID
+      ansible.builtin.debug:
+        var: fleet_server_policy.json.item.id
+
     - name: Check if Elastic Agent is Installed
       ansible.builtin.stat:
         path: /opt/elastic-agent-9.5.0-linux-x86_64
