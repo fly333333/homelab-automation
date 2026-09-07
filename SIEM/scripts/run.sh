@@ -14,7 +14,7 @@
 cd ../ansible
 true > group_vars/siem/vault.yml
 # ansible-playbook -i inventory OS_setup.yml
-ansible-playbook -i inventory OS_hardening.yml
+# ansible-playbook -i inventory OS_hardening.yml
 ansible-playbook -i inventory EK_install.yml --vault-password-file ~/.ansible_vault_pass
 ansible-playbook -i inventory fleet_server.yml --vault-password-file ~/.ansible_vault_pass
 
