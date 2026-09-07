@@ -46,16 +46,6 @@
     #   ansible.builtin.set_fact:
     #     fleet_service_token: "{{ fleet_service_token_list[-1] | trim }}"
 
-    # # For debugging, delete later
-    # - name: Debug Service Token
-    #   ansible.builtin.debug:
-    #     var: fleet_service_token
-    #
-    # # For debugging, delete later
-    # - name: Debug Server Policy ID
-    #   ansible.builtin.debug:
-    #     var: fleet_server_policy.json.item.id
-
     - name: Generate Fleet Server service token via API
       ansible.builtin.uri:
         url: "https://{{ elastic_host }}:9200/_security/service/elastic/fleet-server/credential/token/fleet-server-token-{{ ansible_date_time.epoch }}"
@@ -66,12 +56,22 @@
         validate_certs: false
         status_code: 200
       register: fleet_token_response
-      no_log: true
+      # no_log: true
 
     - name: Extract token value
       ansible.builtin.set_fact:
         fleet_service_token: "{{ fleet_token_response.json.token.value }}"
-      no_log: true
+      # no_log: true
+
+    # For debugging, delete later
+    - name: Debug Service Token
+      ansible.builtin.debug:
+        var: fleet_service_token
+
+    # For debugging, delete later
+    - name: Debug Server Policy ID
+      ansible.builtin.debug:
+        var: fleet_server_policy.json.item.id
 
     - name: Check if Elastic Agent is Installed
       ansible.builtin.stat:
