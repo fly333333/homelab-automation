@@ -1,6 +1,6 @@
 ---
 - name: Deploy ILM Policy to Kibana
-  hosts: all
+  hosts: siem
   remote_user: ansible
   become: true
 

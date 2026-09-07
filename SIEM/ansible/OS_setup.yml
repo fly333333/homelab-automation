@@ -1,6 +1,6 @@
 ---
 - name: Set up OS for SIEM and Basic Hardening
-  hosts: all
+  hosts: siem
   remote_user: ansible
   become: true
 

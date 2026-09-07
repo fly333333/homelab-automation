@@ -1,6 +1,6 @@
 ---
 - name: Basic hardening for the SIEM
-  hosts: all
+  hosts: siem
   remote_user: ansible
   become: true
 
