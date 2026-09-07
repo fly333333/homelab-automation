@@ -5,6 +5,23 @@
   become: true
 
   tasks:
+    - name: Initialize Fleet in Kibana
+      ansible.builtin.uri:
+        url: "http://{{ elastic_host }}:5601/api/fleet/setup"
+        method: POST
+        user: elastic
+        password: "{{ vault_elastic_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        headers:
+          kbn-xsrf: "true"
+        status_code: 200
+      register: fleet_setup_result
+
+    - name: Debug Fleet setup result
+      ansible.builtin.debug:
+        var: fleet_setup_result.json
+
     - name: Create Agent Policy for Fleet Server
       ansible.builtin.uri:
         url: "http://{{ elastic_host }}:5601/api/fleet/agent_policies"
