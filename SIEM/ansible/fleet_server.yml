@@ -63,15 +63,15 @@
         fleet_service_token: "{{ fleet_token_response.json.token.value }}"
       # no_log: true
 
-    # # For debugging, delete later
-    # - name: Debug Service Token
-    #   ansible.builtin.debug:
-    #     var: fleet_service_token
-    #
-    # # For debugging, delete later
-    # - name: Debug Server Policy ID
-    #   ansible.builtin.debug:
-    #     var: fleet_server_policy.json.item.id
+    # For debugging, delete later
+    - name: Debug Service Token
+      ansible.builtin.debug:
+        var: fleet_service_token
+
+    # For debugging, delete later
+    - name: Debug Server Policy ID
+      ansible.builtin.debug:
+        var: fleet_server_policy.json.item.id
 
     - name: Check if Elastic Agent is Installed
       ansible.builtin.stat:
@@ -100,9 +100,9 @@
       ansible.builtin.set_fact:
         ca_fingerprint: "{{ ca_fingerprint_raw.stdout.split('=')[1] | replace(':','') | lower }}"
 
-    # - name: Debug Kibana CA fingerprint (clean version)
-    #   ansible.builtin.debug:
-    #     var: ca_fingerprint
+    - name: Debug Kibana CA fingerprint (clean version)
+      ansible.builtin.debug:
+        var: ca_fingerprint
 
     - name: Install and start Fleet Server
       ansible.builtin.command: >
