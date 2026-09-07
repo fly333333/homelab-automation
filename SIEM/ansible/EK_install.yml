@@ -11,6 +11,18 @@
         state: restarted
 
   tasks:
+    - name: Force time sync before any apt operations
+      ansible.builtin.command: timedatectl set-ntp true
+      changed_when: false
+
+    - name: Wait for clock to be synchronized
+      ansible.builtin.command: timedatectl status
+      register: time_status
+      until: "'System clock synchronized: yes' in time_status.stdout"
+      retries: 10
+      delay: 3
+      changed_when: false
+
     - name: Apt Install gpg Support Packages 
       ansible.builtin.apt:
         pkg:
