@@ -5,23 +5,6 @@
   become: true
 
   tasks:
-    - name: Initialize Fleet in Kibana
-      ansible.builtin.uri:
-        url: "http://{{ elastic_host }}:5601/api/fleet/setup"
-        method: POST
-        user: elastic
-        password: "{{ vault_elastic_password }}"
-        force_basic_auth: true
-        validate_certs: false
-        headers:
-          kbn-xsrf: "true"
-        status_code: 200
-      register: fleet_setup_result
-
-    - name: Debug Fleet setup result
-      ansible.builtin.debug:
-        var: fleet_setup_result.json
-
     - name: Create Agent Policy for Fleet Server
       ansible.builtin.uri:
         url: "http://{{ elastic_host }}:5601/api/fleet/agent_policies"
@@ -32,6 +15,7 @@
         force_basic_auth: true
         headers:
           kbn-xsrf: "true"
+          x-elastic-internal-origin: "Kibana"
         body_format: json
         body:
           name: "Fleet Server Policy"
@@ -39,8 +23,9 @@
           has_fleet_server: true
         status_code: 200
       register: fleet_server_policy
-      ignore_errors: true
-
+      until: fleet_server_policy.status == 200
+      retries: 20
+      delay: 5
     # - name: Check service account tokens
     #   ansible.builtin.command: /usr/share/elasticsearch/bin/elasticsearch-service-tokens list
     #   register: token_list
