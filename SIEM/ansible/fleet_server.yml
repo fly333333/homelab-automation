@@ -24,37 +24,54 @@
       register: fleet_server_policy
       ignore_errors: true
 
-    - name: Check service account tokens
-      ansible.builtin.command: /usr/share/elasticsearch/bin/elasticsearch-service-tokens list
-      register: token_list
+    # - name: Check service account tokens
+    #   ansible.builtin.command: /usr/share/elasticsearch/bin/elasticsearch-service-tokens list
+    #   register: token_list
+    #
+    # - name: Generate Fleet Server service token
+    #   ansible.builtin.command: >
+    #     /usr/share/elasticsearch/bin/elasticsearch-service-tokens create elastic/fleet-server fleet-server-token-{{ ansible_date_time.epoch }}
+    #   register: fleet_service_token_output
+    #   when: "'elastic/fleet-server/fleet-server-token' not in token_list.stdout"
+    #
+    # - name: Debug Fleet Server Token Output (Full Output)
+    #   ansible.builtin.debug:
+    #     var: fleet_service_token_output
+    #
+    # - name: Split token output
+    #   ansible.builtin.set_fact:
+    #     fleet_service_token_list: "{{ fleet_service_token_output.stdout | split }}"
+    #
+    # - name: Clean token output
+    #   ansible.builtin.set_fact:
+    #     fleet_service_token: "{{ fleet_service_token_list[-1] | trim }}"
 
-    - name: Generate Fleet Server service token
-      ansible.builtin.command: >
-        /usr/share/elasticsearch/bin/elasticsearch-service-tokens create elastic/fleet-server fleet-server-token-{{ ansible_date_time.epoch }}
-      register: fleet_service_token_output
-      when: "'elastic/fleet-server/fleet-server-token' not in token_list.stdout"
+    # # For debugging, delete later
+    # - name: Debug Service Token
+    #   ansible.builtin.debug:
+    #     var: fleet_service_token
+    #
+    # # For debugging, delete later
+    # - name: Debug Server Policy ID
+    #   ansible.builtin.debug:
+    #     var: fleet_server_policy.json.item.id
 
-    - name: Debug Fleet Server Token Output (Full Output)
-      ansible.builtin.debug:
-        var: fleet_service_token_output
+    - name: Generate Fleet Server service token via API
+      ansible.builtin.uri:
+        url: "https://{{ elastic_host }}:9200/_security/service/elastic/fleet-server/credential/token/fleet-server-token-{{ ansible_date_time.epoch }}"
+        method: POST
+        user: elastic
+        password: "{{ vault_elastic_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        status_code: 200
+      register: fleet_token_response
+      no_log: true
 
-    - name: Split token output
+    - name: Extract token value
       ansible.builtin.set_fact:
-        fleet_service_token_list: "{{ fleet_service_token_output.stdout | split }}"
-
-    - name: Clean token output
-      ansible.builtin.set_fact:
-        fleet_service_token: "{{ fleet_service_token_list[-1] | trim }}"
-
-    # For debugging, delete later
-    - name: Debug Service Token
-      ansible.builtin.debug:
-        var: fleet_service_token
-  
-    # For debugging, delete later
-    - name: Debug Server Policy ID
-      ansible.builtin.debug:
-        var: fleet_server_policy.json.item.id
+        fleet_service_token: "{{ fleet_token_response.json.token.value }}"
+      no_log: true
 
     - name: Check if Elastic Agent is Installed
       ansible.builtin.stat:
@@ -87,14 +104,15 @@
       ansible.builtin.debug:
         var: ca_fingerprint
 
-    # - name: Install and start Fleet Server
-    #   ansible.builtin.command: >
-    #     /opt/elastic-agent-9.5.0-linux-x86_64/elastic-agent install
-    #     --fleet-server-es=https:/{{ elastic_host }}/:9200 \
-    #     --fleet-server-service-token={{ fleet_service_token }} \
-    #     --fleet-server-policy=fleet-server-policy \
-    #     --fleet-server-es-ca-trusted-fingerprint={{ ca_fingerprint }}\
-    #     --fleet-server-port=8220 \
-    #     --install-servers
-    #   when: not fleet_server_installed.stat.exists    
+    - name: Install and start Fleet Server
+      ansible.builtin.command: >
+        /opt/elastic-agent-9.5.0-linux-x86_64/elastic-agent install
+        --fleet-server-es=https:/{{ elastic_host }}/:9200 \
+        --fleet-server-service-token={{ fleet_service_token }} \
+        --fleet-server-policy=fleet-server-policy \
+        --fleet-server-es-ca-trusted-fingerprint={{ ca_fingerprint }}\
+        --fleet-server-port=8220 \
+        --install-servers \
+        --non-interactive
+      when: not fleet_server_installed.stat.exists    
 
