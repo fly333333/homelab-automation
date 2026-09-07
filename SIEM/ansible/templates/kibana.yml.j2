@@ -195,3 +195,8 @@ server.publicBaseUrl: "http://192.168.0.15:5601"
 # Maximum number of documents loaded by each shard to generate autocomplete suggestions.
 # This value must be a whole number greater than zero. Defaults to 100_000
 #unifiedSearch.autocomplete.valueSuggestions.terminateAfter: 100000
+
+# Encryption keys needed to set up Fleet
+xpack.encryptedSavedObjects.encryptionKey: "{{ vault_kibana_encryption_key }}"
+xpack.reporting.encryptionKey: "{{ vault_kibana_reporting_key }}"
+xpack.security.encryptionKey: "{{ vault_kibana_security_key }}"
