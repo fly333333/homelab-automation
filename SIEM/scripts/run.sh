@@ -11,8 +11,8 @@
 # chmod 600 ~/.ansible_vault_pass
 
 # clear out the vault, so the fresh passwords can be added.
-true > group_vars/siem/vault.yml
 cd ../ansible
+true > group_vars/siem/vault.yml
 ansible-playbook -i inventory OS_setup.yml
 ansible-playbook -i inventory OS_hardening.yml
 ansible-playbook -i inventory EK_install.yml --vault-password-file ~/.ansible_vault_pass
