@@ -157,93 +157,84 @@
 
     # This block is necessary to set up Fleet properly down the line. This
     # section was created by Claude after lots of debugging to find why Fleet. While only the "SavedObjects" is needed for Fleet, the other two could be neede in later development.
-    - name: Check if encryption keys already generated
-      ansible.builtin.include_vars:
-        file: "{{ playbook_dir }}/../group_vars/siem/vault.yml"
-      ignore_errors: true
+    - name: Generate encryption keys
+      ansible.builtin.command: /usr/share/kibana/bin/kibana-encryption-keys generate
+      register: encryption_keys_output
       no_log: true
 
-    - name: Generate and vault Kibana encryption keys
-      when: vault_kibana_encryption_key is not defined
-      block:
-        - name: Generate encryption keys
-          ansible.builtin.command: /usr/share/kibana/bin/kibana-encryption-keys generate
-          register: encryption_keys_output
-          no_log: true
+    - name: Extract encryptedSavedObjects key
+      ansible.builtin.set_fact:
+        kibana_encryption_key: "{{ encryption_keys_output.stdout | regex_search('encryptedSavedObjects.encryptionKey: (.+)', '\\1') | first }}"
+      no_log: true
 
-        - name: Extract encryptedSavedObjects key
-          ansible.builtin.set_fact:
-            kibana_encryption_key: "{{ encryption_keys_output.stdout | regex_search('encryptedSavedObjects.encryptionKey: (.+)', '\\1') | first }}"
-          no_log: true
+    - name: Extract reporting key
+      ansible.builtin.set_fact:
+        kibana_reporting_key: "{{ encryption_keys_output.stdout | regex_search('reporting.encryptionKey: (.+)', '\\1') | first }}"
+      no_log: true
 
-        - name: Extract reporting key
-          ansible.builtin.set_fact:
-            kibana_reporting_key: "{{ encryption_keys_output.stdout | regex_search('reporting.encryptionKey: (.+)', '\\1') | first }}"
-          no_log: true
+    - name: Extract security key
+      ansible.builtin.set_fact:
+        kibana_security_key: "{{ encryption_keys_output.stdout | regex_search('security.encryptionKey: (.+)', '\\1') | first }}"
+      no_log: true
 
-        - name: Extract security key
-          ansible.builtin.set_fact:
-            kibana_security_key: "{{ encryption_keys_output.stdout | regex_search('security.encryptionKey: (.+)', '\\1') | first }}"
-          no_log: true
+    - name: Encrypt encryptedSavedObjects key
+      ansible.builtin.command: >
+        ansible-vault encrypt_string
+        --vault-password-file ~/.ansible_vault_pass
+        '{{ kibana_encryption_key }}' --name vault_kibana_encryption_key
+      delegate_to: localhost
+      register: encrypted_kibana_key
+      no_log: true
 
-        - name: Encrypt encryptedSavedObjects key
-          ansible.builtin.command: >
-            ansible-vault encrypt_string
-            --vault-password-file ~/.ansible_vault_pass
-            '{{ kibana_encryption_key }}' --name vault_kibana_encryption_key
-          delegate_to: localhost
-          register: encrypted_kibana_key
-          no_log: true
+    - name: Encrypt reporting key
+      ansible.builtin.command: >
+        ansible-vault encrypt_string
+        --vault-password-file ~/.ansible_vault_pass
+        '{{ kibana_reporting_key }}' --name vault_kibana_reporting_key
+      delegate_to: localhost
+      register: encrypted_reporting_key
+      no_log: true
 
-        - name: Encrypt reporting key
-          ansible.builtin.command: >
-            ansible-vault encrypt_string
-            --vault-password-file ~/.ansible_vault_pass
-            '{{ kibana_reporting_key }}' --name vault_kibana_reporting_key
-          delegate_to: localhost
-          register: encrypted_reporting_key
-          no_log: true
+    - name: Encrypt security key
+      ansible.builtin.command: >
+        ansible-vault encrypt_string
+        --vault-password-file ~/.ansible_vault_pass
+        '{{ kibana_security_key }}' --name vault_kibana_security_key
+      delegate_to: localhost
+      register: encrypted_security_key
+      no_log: true
 
-        - name: Encrypt security key
-          ansible.builtin.command: >
-            ansible-vault encrypt_string
-            --vault-password-file ~/.ansible_vault_pass
-            '{{ kibana_security_key }}' --name vault_kibana_security_key
-          delegate_to: localhost
-          register: encrypted_security_key
-          no_log: true
+    - name: Insert encryptedSavedObjects key into vault.yml
+      ansible.builtin.blockinfile:
+        path: "{{ playbook_dir }}/../group_vars/siem/vault.yml"
+        marker: "# {mark} KIBANA ENCRYPTEDSAVEDOBJECTS KEY"
+        block: "{{ encrypted_kibana_key.stdout }}"
+        create: true
+      delegate_to: localhost
+      no_log: true
 
-        - name: Insert encryptedSavedObjects key into vault.yml
-          ansible.builtin.blockinfile:
-            path: "{{ playbook_dir }}/../group_vars/siem/vault.yml"
-            marker: "# {mark} KIBANA ENCRYPTEDSAVEDOBJECTS KEY"
-            block: "{{ encrypted_kibana_key.stdout }}"
-            create: true
-          delegate_to: localhost
-          no_log: true
+    - name: Insert reporting key into vault.yml
+      ansible.builtin.blockinfile:
+        path: "{{ playbook_dir }}/../group_vars/siem/vault.yml"
+        marker: "# {mark} KIBANA REPORTING KEY"
+        block: "{{ encrypted_reporting_key.stdout }}"
+        create: true
+      delegate_to: localhost
+      no_log: true
 
-        - name: Insert reporting key into vault.yml
-          ansible.builtin.blockinfile:
-            path: "{{ playbook_dir }}/../group_vars/siem/vault.yml"
-            marker: "# {mark} KIBANA REPORTING KEY"
-            block: "{{ encrypted_reporting_key.stdout }}"
-            create: true
-          delegate_to: localhost
-          no_log: true
+    - name: Insert security key into vault.yml
+      ansible.builtin.blockinfile:
+        path: "{{ playbook_dir }}/../group_vars/siem/vault.yml"
+        marker: "# {mark} KIBANA SECURITY KEY"
+        block: "{{ encrypted_security_key.stdout }}"
+        create: true
+      delegate_to: localhost
+      no_log: true   # was not starting properly. 
 
-        - name: Insert security key into vault.yml
-          ansible.builtin.blockinfile:
-            path: "{{ playbook_dir }}/../group_vars/siem/vault.yml"
-            marker: "# {mark} KIBANA SECURITY KEY"
-            block: "{{ encrypted_security_key.stdout }}"
-            create: true
-          delegate_to: localhost
-          no_log: true   # was not starting properly. 
-
-        - name: Add config to Kibana
-          ansible.builtin.template:
-            src: kibana.yml.j2
-            dest: /etc/kibana/kibana.yml
+    - name: Add config to Kibana
+      ansible.builtin.template:
+        src: kibana.yml.j2
+        dest: /etc/kibana/kibana.yml
 
     - name: Enroll Kibana using the freshly generated token
       ansible.builtin.command: /usr/share/kibana/bin/kibana-setup --enrollment-token {{ kibana_enrollment_token }}
