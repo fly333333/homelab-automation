@@ -5,6 +5,20 @@
   become: true
 
   tasks:
+    # Prevent any timesync errors that happen for APT that occasionally happen
+    # when running the SIEM deploy E2E.
+    - name: Force time sync before any apt operations
+      ansible.builtin.command: timedatectl set-ntp true
+      changed_when: false
+
+    - name: Wait for clock to be synchronized
+      ansible.builtin.command: timedatectl status
+      register: time_status
+      until: "'System clock synchronized: yes' in time_status.stdout"
+      retries: 10
+      delay: 3
+      changed_when: false
+
     - name: Upgrade Packages and System
       ansible.builtin.apt:
         update_cache: true
