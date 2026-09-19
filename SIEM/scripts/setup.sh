@@ -3,18 +3,20 @@
 
 
 # Terraform Variables
-endpoint="[INSERT]"
-api_token="[INSERT]"
-proxmox_node="[INSERT]"
-vm_ip="[INSERT]"
-vm_gateway="[INSERT]"
-dns_server1="[INSERT]"
-dns_server2="[INSERT]"
-ssh_public_key="[INSERT]"
+endpoint="[INSERT]" # i.e. https://192.168.1.10:8006
+api_token="[INSERT]" # i.e. username@pam!UsernameToken=apitoken
+proxmox_node="[INSERT]" # name of proxmox node to use: i.e. prox1
+vm_ip="[INSERT]" # the ip to give SIEM (CIDR notation): i.e. 192.168.1.11/24
+vm_ip_nc="[INSERT]" # same but no CIDR
+vm_gateway="[INSERT]" # the ip of the gateway: i.e. 192.168.1.1
+dns_server1="[INSERT]" # dns server the VM should use: i.e. 1.1.1.1
+dns_server2="[INSERT]" # back up dns server
+ssh_public_key="[INSERT]" # the public key of the machine running ansible (to access VM)
 
-# Ansible Variables
-ansible_vault_password="[INSERT]"
-
+# [ONLY] Ansible Variables
+ansible_vault_password="[INSERT]" # password to set, so ansible can access vault
+elastic_cluster_name="[INSERT]" # name of Elastic cluster. Only one node, so arbitrary (UI)
+elastic_node_name="[INSERT]" # name of the one node that will be running (UI).
 
 
 read -p "Download Ansible and other useful packages (i.e. curl, unzip, python, pip)? [y/n]: " prompt_1
@@ -24,7 +26,7 @@ fi
 
 read -p "Download Terraform? [y/n]: " prompt_2
 if [[ "$prompt_2" =~ ^[y]$ ]]; then
-    curl -fsSL [https://apt.releases.hashicorp.com/gpg](https://apt.releases.hashicorp.com/gpg "https://apt.releases.hashicorp.com/gpg") | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+    curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
     echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list
     apt update && apt install terraform
 fi
@@ -36,8 +38,8 @@ echo "the prompt will skip."
 
 
 # proxmox node name
-if [$proxmox_node != "[INSERT]"]; then
-    read -p "Enter the name of the desired proxmox node" proxmox_node
+if [[ "$proxmox_node" == "[INSERT]" ]]; then
+    read -p "Enter the name of the desired proxmox node: " proxmox_node
     echo "Proxmox Node: $proxmox_node"
 fi
 
@@ -118,26 +120,41 @@ printf "vm_ip = \"$vm_ip\"\n" >> terraform.tfvars
 printf "vm_gateway = \"$vm_gateway\"\n" >> terraform.tfvars
 printf "dns_servers = [\"$dns_server1\", \"$dns_server2\"]\n" >> terraform.tfvars
 printf "ssh_public_key = \"$ssh_public_key\"\n" >> terraform.tfvars
-
-
-
-
-
-
-
-
-
-
-
-
+cd ../scripts
 
 
 # Create the Ansible Vault Password for accessing Vault and SIEM Secrets
-if [$ansible_vault_password != "[INSERT]"]; then
+if [[ "$ansible_vault_password" == "[INSERT]" ]]; then
     read -p "Enter new Ansible Vault Password (used for SIEM secrets): " ansible_vault_password
-    echo "Ansible Vault Password: $ansible_vault_password"
     touch ~/.ansible_vault_pass
-    echo "$ansible_vault_password" > ~/.ansible_vault_pass
+    echo "$ansible_vault_password" >> ~/.ansible_vault_pass
 fi
+echo "Ansible Vault Password: $ansible_vault_password"
+
+# Set the elastic cluster name for elastic configuration
+if [[ "$elastic_cluster_name" == "[INSERT]" ]]; then
+    read -p "Enter the name of the Elastic Cluster: " elastic_cluster_name
+fi
+echo "Ansible Cluster Name: $elastic_cluster_name"
+
+# Set the elastic node name for elastic configuration
+if [[ "$elastic_node_name" == "[INSERT]" ]]; then
+    read -p "Enter the name of the Elastic Node (cluster can be multiple VM's, a node is just one instance): " elastic_node_name
+fi
+echo "Ansible Node Name: $elastic_cluster_name"
+
+# Insert all the variables needed in the Ansible Vars file
+echo "Creating vars.yml file for SIEM scripts to use."
+
+cd ../ansible/group_vars/siem
+cat /dev/null > vars.yml
+touch vars.yml
+printf "elastic_host: $vm_ip_nc \n" >> vars.yml
+printf "siem_gateway: $vm_gateway \n" >> vars.yml
+printf "elastic_cluster_name: $elastic_cluster_name \n" >> vars.yml
+printf "elastic_node_name: $elastic_node_name \n" >> vars.yml
+cd ../../../scripts
+pwd
 
 
+# Moving on to Script executions

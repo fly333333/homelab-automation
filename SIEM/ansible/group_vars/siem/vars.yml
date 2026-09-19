@@ -1,1 +1,4 @@
-elastic_host: 192.168.0.15
+elastic_host: 192.168.0.15 
+siem_gateway: 192.168.0.1 
+elastic_cluster_name: homelab-siem 
+elastic_node_name: siem1 
