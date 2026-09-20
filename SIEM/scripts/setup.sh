@@ -158,3 +158,30 @@ pwd
 
 
 # Moving on to Script executions
+
+
+# terraform
+cd ../terraform
+terraform init --upgrade
+terraform plan
+terraform apply
+
+# ansible
+
+# clear out the vault, so the fresh passwords can be added.
+cd ../ansible
+true > group_vars/siem/vault.yml
+ansible-playbook -i inventory OS_setup.yml
+ansible-playbook -i inventory OS_hardening.yml
+ansible-playbook -i inventory EK_install.yml --vault-password-file ~/.ansible_vault_pass
+ansible-playbook -i inventory fleet_server.yml --vault-password-file ~/.ansible_vault_pass
+
+read -p "Print elastic password to access the SIEM? [y/n]: " prompt_3
+if [[ "$prompt_3" =~ ^[y]$ ]]; then
+    ansible localhost -m ansible.builtin.debug -a "var=vault_elastic_password" -e "@vault.yml" --vault-password-file ~/.ansible_vault_pass
+fi
+
+
+# TODO:
+# - Copies to vars.yml
+# - Option to output elastic credentials to screen after SIEM deploy.
