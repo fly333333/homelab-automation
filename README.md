@@ -40,4 +40,8 @@ The first step in using the SIEM is properly deploying it. As the Elastic stack 
 
 ##### `/homelab-automation/SIEM/docs`
 
+- `ansible_docs.md`: Ansible methods used.
+- `deploy_docs.md`: Dev process, decisions, citations, what each script does and why.
+- `proxmox_terraform_setup.md`: Setup a template and service account in proxmox to use.
+
 Includes all the documentation for the Deploy scripts. It includes the development process used and decisions. Also walks through what the scripts are doing and why, and provides bonus documentation on all the different methods used in the Ansible scripts. Reading the docs would give you a good idea of where to make changes if necessary.
