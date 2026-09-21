@@ -15,6 +15,8 @@ The SIEM chosen is an Elastic Stack, currently using Elastic, Kibana (frontend),
 
 ### Deploy
 
+![SIEM Deploy Diagram](SIEM/docs/deploy_diagram.png "Deploy Diagram")
+
 The first step in using the SIEM is properly deploying it. As the Elastic stack has quite a few configuration steps for the operating system, network, Elastic, and Kibana. To deploy the SIEM in a manner that can be deterministically repeated (idempotency), I used Terraform, Ansible, and Bash.
 
 - **Terraform**: Create and manipulate Proxmox resources.
