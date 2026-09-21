@@ -301,6 +301,43 @@ The main goal with ansible is to make the setup of the SIEM as repeatable as pos
 	**Ansible Module**: `uri`
 
 
+##### Bash Scripts
+
+Mainly to set key variables needed for Terraform and Ansible, download dependencies, and pilot commands. The following task are completed:
+
+1. **Download Terraform and Ansible**
+	Prompts to download Terraform and Ansible with `apt` if desired.
+2. **Set all Terraform and Ansible Variables**
+	Prompts to set all necessary variables by the user, including ssh key, if the current variable does not match the regex it should. If they are manually set by the user properly (i.e. by editing the script), none of the prompts will appear. 
+	Variables:
+```bash
+# Terraform Variables
+endpoint="[INSERT]" # i.e. https://192.168.1.10:8006
+api_token="[INSERT]" # i.e. username@pam!UsernameToken=apitoken
+proxmox_node="[INSERT]" # name of proxmox node to use: i.e. prox1
+vm_ip="[INSERT]" # the ip to give SIEM (CIDR notation): i.e. 192.168.1.11/24
+vm_ip_nc="[INSERT]" # same but no CIDR
+vm_gateway="[INSERT]" # the ip of the gateway: i.e. 192.168.1.1
+dns_server1="[INSERT]" # dns server the VM should use: i.e. 1.1.1.1
+dns_server2="[INSERT]" # back up dns server
+ssh_public_key="[INSERT]" # the public key of the machine running ansible (to access VM)
+
+# [ONLY] Ansible Variables
+ansible_vault_password="[INSERT]" # password to set, so ansible can access vault
+elastic_cluster_name="[INSERT]" # name of Elastic cluster. Only one node, so arbitrary (UI)
+elastic_node_name="[INSERT]" # name of the one node that will be running (UI).
+```
+4. **Add to Variable Files**
+	Adds Terraform variables to `terraform.tfvars` and Ansible variables to `vars.yml` in `group_vars/siem/`.
+5. **Terraform Commands**
+	Runs the Terraform commands to run the SIEM VM setup.
+6. **Ansible Commands**
+	Runs each ansible script.
+7. **Print Elastic Password**
+	If desired, the script will print the elastic SIEM password, to access Elastic from Kibana. 
+
+
+
 #### Resources:
 - https://logz.io/learn/complete-guide-elk-stack/#what-elk-stack
 - https://www.elastic.co/guide/index.html

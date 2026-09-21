@@ -166,6 +166,9 @@ terraform init --upgrade
 terraform plan
 terraform apply
 
+echo "Pause to insure the VM is setup"
+sleep 25
+
 # ansible
 
 # clear out the vault, so the fresh passwords can be added.
@@ -174,6 +177,8 @@ true > group_vars/siem/vault.yml
 ansible-playbook -i inventory OS_setup.yml
 ansible-playbook -i inventory OS_hardening.yml
 ansible-playbook -i inventory EK_install.yml --vault-password-file ~/.ansible_vault_pass
+echo "Pause so Elastic/Kibana can setup"
+sleep 25
 ansible-playbook -i inventory fleet_server.yml --vault-password-file ~/.ansible_vault_pass
 
 read -p "Print elastic password to access the SIEM? [y/n]: " prompt_3
@@ -182,6 +187,3 @@ if [[ "$prompt_3" =~ ^[y]$ ]]; then
 fi
 
 
-# TODO:
-# - Copies to vars.yml
-# - Option to output elastic credentials to screen after SIEM deploy.
