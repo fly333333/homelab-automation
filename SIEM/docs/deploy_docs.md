@@ -1,12 +1,11 @@
 # Terraform/Ansible/Bash Scripts
 For this section I will outline the general setup for these scripts, what they do, and any other relevant information. The goal by the end of this section is to have a bash script that can be run that will deploy and set up the SIEM from the control box. Later, we can use this as a base to deploy more infra, such as the creation and destruction of a test AD Domain.
 
-##### Process
+![Deploy Diagram](deploy_diagram.png "Deploy")
 
-// TODO:
-- Process Diagram and Explanation
+## Process
 
-##### Development Structure
+### Development Structure
 For development, I used an iterative process to cleanly work through developing each script. My approach, as mentioned above, is to combine my learning and AI in a way that does not hinder learning, but increases efficiency developing (*still spending loads of time reading docs...*). 
 
 Additionally, auxillary tools I used include `neovim` as an IDE, `git` for version management, and `obsidian` for documentation/notes. The following steps are the continuous development cycle I used:
@@ -25,7 +24,7 @@ Additionally, auxillary tools I used include `neovim` as an IDE, `git` for versi
 9. Reset VM to prior snapshot as needed for testing.
 10. After a successful run, manually test the script's efficacy (*i.e. ssh in to the VM and test*). Can be automated down the road.
 
-##### Deployment Structure
+### Deployment Structure
 
 To deploy the SIEM, there are a few layers we need to manipulate to successfully automate the process. Firstly, we need to setup and deploy the infrastructure, or in this case, the VM hosting the SIEM. Next we need to change the state of the machine, wether its downloading packages, supplying configuration, or calling APIs. Finally, we have the driving layer, which is in charge of running the two prior layers, removing the need to remember (or potentially mess up) the commands needed. 
 
@@ -55,7 +54,7 @@ The following sections will go through what each step in the scripts are aiming 
 
 *Note: Code examples used to depict an action might not be accurate to what is used at the latest version of the deployment script.*
 
-##### Terraform
+## Terraform
 As mentioned above, Terraform will be how we deploy the dedicated VM for the ELK stack SIEM. The two main components we are doing in Terraform is setting all the necessary variables for accessing both Proxmox and the VM after its setup, and specifications for the VM. 
 
 Terraform uses its own language ,HashiCorp Configuration Language (HCL), its a human-readable configuration language, almost similar to using json for configuration.  
@@ -81,7 +80,7 @@ terraform plan
 terraform apply
 ```
 
-##### Ansible
+## Ansible
 The main goal with ansible is to make the setup of the SIEM as repeatable as possible. Each Ansible Playbook will walk through a series of `tasks` to do a specific action on the SIEM VM. Here are each of the SIEM deploy scripts:
 
 1. **OS_setup**
@@ -95,7 +94,7 @@ The main goal with ansible is to make the setup of the SIEM as repeatable as pos
 5. **fleet_server**
 	Create and setup the Fleet server, allowing connections to endpoints and endpoint policy management.
 
-###### OS_setup
+### OS_setup
 
 **Tasks:**
 
@@ -143,7 +142,7 @@ The main goal with ansible is to make the setup of the SIEM as repeatable as pos
 	**Goal**: Inserts the changes in the location we specified earlier, so the process, file and memory limit changes can be made persistently. 
 	**Ansible Module**: `template`
 
-###### OS_hardening
+### OS_hardening
 
 - **Name**: Install UFW
 	**Goal**: Install UFW, a firewall for unix/linux systems. This will allow us to then set the firewall rules for accessing ports.
@@ -192,7 +191,7 @@ The main goal with ansible is to make the setup of the SIEM as repeatable as pos
 - **Name**: Start Fail2Ban
 	**Goal**: Start fail2ban in systemctl.
 	**Ansible Module**: `systemd_service`
-###### EK_install
+### EK_install
 *Note: Some tasks will be combined for brevity.*
 
 - **Name**: Time Sync Again
@@ -271,14 +270,14 @@ The main goal with ansible is to make the setup of the SIEM as repeatable as pos
 	**Goal**: Start and enable the Kibana service with system daemon
 	**Ansible Module**: `systemd_service`
 
-###### ILM_policy
+### ILM_policy
 
 - **Name**: Call the API to Create an ILM Policy
 	**Goal**: Create an Index Lifecycle Management which sets how long the indexes will be saved before deletion. 
 	**Ansible Module**: `uri`
 
 
-###### fleet_server
+### fleet_server
 
 - **Name**: Create Agent Policy for Fleet Server
 	**Goal**: Creates a default agent policy for the incoming Fleet Server. Policies for the Fleet Server versus agent are created the same, however, are set as `has_fleet_server`: `true`. 
@@ -301,7 +300,7 @@ The main goal with ansible is to make the setup of the SIEM as repeatable as pos
 	**Ansible Module**: `uri`
 
 
-##### Bash Scripts
+## Bash Scripts
 
 Mainly to set key variables needed for Terraform and Ansible, download dependencies, and pilot commands. The following task are completed:
 
@@ -338,7 +337,7 @@ elastic_node_name="[INSERT]" # name of the one node that will be running (UI).
 
 
 
-#### Resources:
+## Resources:
 - https://logz.io/learn/complete-guide-elk-stack/#what-elk-stack
 - https://www.elastic.co/guide/index.html
 - https://medium.com/@DatBoyBlu3/provisioning-proxmox-virtual-machines-with-terraform-d9e9c549f947
